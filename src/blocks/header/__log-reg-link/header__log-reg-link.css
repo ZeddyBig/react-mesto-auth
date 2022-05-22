@@ -1,0 +1,14 @@
+.header__log-reg-link {
+    text-decoration: none;
+    color: #FFF;
+    transition: opacity ease 0.5s;
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 22px;
+}
+
+.header__log-reg-link:hover {
+	opacity: 0.6;
+}

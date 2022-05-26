@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Route, Routes, Navigate, useHistory } from 'react-router-dom';
+import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import Main from './Main'; 
@@ -13,8 +13,10 @@ import AddPlacePopup from "./AddPlacePopup";
 import ProtectedRoute from './ProtectedRoute';
 import Login from './Login';
 import Register from './Register';
+import InfoTooltip from './InfoTooltip';
+import * as mestoAuth from '../utils/mestoAuth';
 
-function App() {
+const App = () => {
 
   const [currentUser, setCurrentUser] = useState({});
 
@@ -25,7 +27,11 @@ function App() {
   const [selectedCard, setSelectedCard] = useState({});
   const [cards, setCards] = useState([]);
 // Спринт 12
-  const [loggedIn, setLoggedIn] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const history = useNavigate();
+  const [isInfoTooltipOpen, setIsInfoTooltipOpen] = useState(false);
+  const [message, setMessage] = useState({ success: false, message: "" });
 
   useEffect(() => {
     api.getUserInfo()
@@ -47,8 +53,10 @@ function App() {
       })
       setCards(cardInfo);
     })
-    .catch((err) => console.log(err))
+    .catch((err) => console.log(err));
+
   }, []);
+
 
   function handleEditAvatarClick() {
     setIsEditAvatarPopupOpen(true);
@@ -123,47 +131,136 @@ function App() {
     .catch((err) => console.log(err));
   }
   // Из Main.js конец
-  
+  // Спринт 12
+
+  const handleLogin = ({ email, password }) => {
+    return mestoAuth.authorize(email, password)
+        .then((data) => {
+          if (data.token) {
+            localStorage.setItem('jwt', data.token);
+            
+            tokenCheck();
+          }
+        })
+        .catch((err) => {
+          setMessage({
+            successful: false,
+            message: "Что-то пошло не так! Попробуйте ещё раз.",
+          });
+          setIsInfoTooltipOpen(true);
+        });
+  }
+
+  const handleRegister = ({ email, password }) => {
+    return mestoAuth.register(email, password).then((res) => {
+      if (res) {
+        setMessage({
+          success: true,
+          message: "Вы успешно зарегистрировались!",
+        });
+        setIsInfoTooltipOpen(true);
+        history('/signin');
+      }
+    })
+    .catch((err) => {
+      setMessage({
+        successful: false,
+        message: "Что-то пошло не так! Попробуйте ещё раз.",
+      });
+      setIsInfoTooltipOpen(true);
+    });
+  }
+
+  const tokenCheck = () => {
+    if (localStorage.getItem('jwt')){
+      let jwt = localStorage.getItem('jwt');
+      mestoAuth.getContent(jwt).then((data) => {
+        if (data){
+          let userData = {
+            email: data.data.email
+          }
+          history("/");
+          setLoggedIn(true);
+          setEmail(userData.email);
+        }
+      });
+    }
+  }
+
+  const signOut = () => {
+    localStorage.removeItem('jwt');
+    setLoggedIn(false);
+    setEmail("");
+    history('/register');
+  }
+
+  useEffect(() => {
+    tokenCheck();
+  }, []);
+
+  useEffect(() => {
+    if (loggedIn) {
+        history("/");
+    }
+  }, [loggedIn]);
+
+  function closeInfoTooltip() {
+    setIsInfoTooltipOpen(false);
+  }
+
   return (
-    <Routes>
-      <Route path="/" loggedIn={loggedIn} element={
-          <div className="App">
-          <CurrentUserContext.Provider value={currentUser}>
-            <div className="page">
-              <Header/>
-                <Main 
-                  onEditAvatar={handleEditAvatarClick} 
-                  onEditProfile={handleEditProfileClick}
-                  onAddPlace={handleAddPlaceClick} 
-                  onCardClick={handleCardClick}
-                  cards={cards}
-                  onCardLike={handleCardLike}
-                  onCardDelete={handleCardDelete}
-                />
-              <Footer/>
+    <div className="App">
+      <CurrentUserContext.Provider value={currentUser}>
+        <div className="page">
+          <Routes>
+            <Route path="/" element={
+                <ProtectedRoute loggedIn={loggedIn}>
 
-              <EditAvatarPopup isOpen={isEditAvatarPopupOpen} onClose={closeAllPopups} onUpdateAvatar={handleUpdateAvatar} />
+                <Header buttonName={"Выйти"} handleClick={signOut} email={email} linkTo={"/signin"}/>
+                  <Main 
+                    onEditAvatar={handleEditAvatarClick} 
+                    onEditProfile={handleEditProfileClick}
+                    onAddPlace={handleAddPlaceClick} 
+                    onCardClick={handleCardClick}
+                    cards={cards}
+                    onCardLike={handleCardLike}
+                    onCardDelete={handleCardDelete}
+                  />
+                <Footer/>
+              </ProtectedRoute>
+            } />
 
-              <EditProfilePopup isOpen={isEditProfilePopupOpen} onClose={closeAllPopups} onUpdateUser={handleUpdateUser} />
-
-              <AddPlacePopup isOpen={isAddPlacePopupOpen} onClose={closeAllPopups} onAddCard={handleAddCard} />
+            <Route path="/signin" element={
+              <Login handleLogin={handleLogin} buttonName={"Регистрация"} handleClick={''} linkTo={"/signup"}/>
+            } />
               
-              <PopupWithForm name={'delete-confirm'} title='Вы уверены?' buttonName={'Да'}/>
-              
-              <ImagePopup card={selectedCard} isOpen={isImagePopupOpen} onClose={closeAllPopups} />
-            </div>
-          </CurrentUserContext.Provider>
-          </div>
-      } />
-      <Route path="/signin" element={
-        <Login />
-      } />
-        
-      <Route path="/signup" element={
-        <Register />
-      }/>
-    </Routes>
+            <Route path="/signup" element={
+              <Register handleRegister={handleRegister} buttonName={"Войти"} handleClick={''} linkTo={"/signin"}/>
+            }/>
+
+            <Route exact path="/" loggedIn={loggedIn} element={
+              loggedIn ? <Navigate to="/" /> : <Navigate to="/signin" />
+            }/>
+          </Routes>
+
+          <EditAvatarPopup isOpen={isEditAvatarPopupOpen} onClose={closeAllPopups} onUpdateAvatar={handleUpdateAvatar} />
+
+          <EditProfilePopup isOpen={isEditProfilePopupOpen} onClose={closeAllPopups} onUpdateUser={handleUpdateUser} />
+
+          <AddPlacePopup isOpen={isAddPlacePopupOpen} onClose={closeAllPopups} onAddCard={handleAddCard} />
+
+          <PopupWithForm name={'delete-confirm'} title='Вы уверены?' buttonName={'Да'}/>
+
+          <ImagePopup card={selectedCard} isOpen={isImagePopupOpen} onClose={closeAllPopups} />
+
+          <InfoTooltip name={'info-tooltip'} isOpen={isInfoTooltipOpen} onClose={closeInfoTooltip} message={message.message} success={message.success}/>
+
+        </div>
+      </CurrentUserContext.Provider>
+    </div>
   );
 }
+
+
 
 export default App;

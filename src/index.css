@@ -7,6 +7,8 @@
 @import url(blocks/header/header.css);
 @import url(blocks/header/__logo/header__logo.css);
 @import url(blocks/header/__logo-image/header__logo-image.css);
+@import url(blocks/header/__logged-user/header__logged-user.css);
+@import url(blocks/header/__user-name/header__user-name.css);
 @import url(blocks/header/__log-reg-link/header__log-reg-link.css);
 /* Конец header */
 /* Начало profile */

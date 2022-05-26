@@ -7,6 +7,7 @@ const Login = (props) => {
         email: '',
         password: '',
     });
+    const [message, setMessage] = useState('');
 
     const handleChange = (e) => {
         const {name, value} = e.target;
@@ -16,17 +17,26 @@ const Login = (props) => {
         }));
     }
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        props.handleLogin({ email: formParams.email, password: formParams.password })
+            .catch(err => {
+              setMessage(err.message);
+            });
+    }
+
     return(
         <div className="page login">
-            <Header />
+            <Header buttonName={props.buttonName} handleClick={props.handleClick} linkTo={props.linkTo}/>
             
-            <form className="login__form">
+            <form className="login__form" onSubmit={handleSubmit}>
                 <div className="login__top">
                     <h2 className="login__header">
                         Вход
                     </h2>
-                    <input id="email" name="email" placeholder="Email" type="email" value={formParams.email} onChange={handleChange} />
-                    <input id="password" name="password" placeholder="Пароль" type="password" value={formParams.password} onChange={handleChange} />
+                    <input id="email" name="email" placeholder="Email" type="email" value={formParams.email} onChange={handleChange} required />
+                    <input id="password" name="password" placeholder="Пароль" type="password" value={formParams.password} onChange={handleChange} required />
                 </div>
                 <div className="login__bottom">
                     <div className="login__button-container">

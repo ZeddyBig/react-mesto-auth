@@ -48,7 +48,9 @@ const App = () => {
           link: cardData.link,
           likes: cardData.likes,
           _id: cardData._id,
-          ownerId: cardData.owner._id
+          owner: {
+            _id: cardData.owner._id
+          }
         }
       })
       setCards(cardInfo);
@@ -173,7 +175,7 @@ const App = () => {
 
   const tokenCheck = () => {
     if (localStorage.getItem('jwt')){
-      let jwt = localStorage.getItem('jwt');
+      const jwt = localStorage.getItem('jwt');
       mestoAuth.getContent(jwt).then((data) => {
         if (data){
           let userData = {
@@ -183,7 +185,8 @@ const App = () => {
           setLoggedIn(true);
           setEmail(userData.email);
         }
-      });
+      })
+      .catch((err) => console.log(err));
     }
   }
 
@@ -260,7 +263,5 @@ const App = () => {
     </div>
   );
 }
-
-
 
 export default App;
